@@ -9,10 +9,8 @@ defmodule QueueServices.Application do
   def start(_type, _args) do
     children = [
       {QueueServices.QueueGenserver,
-       [
-         ttl_expires_seconds: 20,
-         function_to_dispatch: &QueueServices.greet/1
-       ]}
+       [ttl_expires_seconds: 20, function_to_dispatch: &QueueServices.greet/1]},
+      {QueueServices.QueueGenserverPartitionSupervisor, []}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

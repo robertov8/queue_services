@@ -20,6 +20,20 @@ QueueServices.QueueGenServer.enqueue("terceiro")
 QueueServices.QueueGenServer.enqueue(["quarto", "quinto"])
 ```
 
+## Enfileirar listas particionadas
+
+```elixir
+# impar
+router_key_impar = 1
+QueueServices.QueueGenserverPartitionSupervisor.enqueue(router_key_impar, 1)
+QueueServices.QueueGenserverPartitionSupervisor.enqueue(router_key_impar, [3, 5])
+
+# par
+router_key_par = 2
+QueueServices.QueueGenserverPartitionSupervisor.enqueue(router_key_par, 2)
+QueueServices.QueueGenserverPartitionSupervisor.enqueue(router_key_par, [4, 6])
+```
+
 ## TODO
 
 - [ ] Implementar desenfileiramento de fila
