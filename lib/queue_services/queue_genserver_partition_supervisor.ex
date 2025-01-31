@@ -10,12 +10,13 @@ defmodule QueueServices.QueueGenserverPartitionSupervisor do
   def init(_opts) do
     children = [
       {PartitionSupervisor,
+       partitions: 2,
+       name: QueueGenserverPartitionSupervisor,
        child_spec:
          QueueGenserverPartition.child_spec(
            ttl_expires_seconds: 20,
            function_to_dispatch: &QueueServices.greet/1
-         ),
-       name: QueueGenserverPartitionSupervisor}
+         )}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
