@@ -10,9 +10,7 @@ defmodule QueueServices.Application do
     children = [
       {QueueServices.QueueGenserver,
        [
-         timeout_monitor_seconds: 10,
          ttl_expires_seconds: 20,
-         max_queue_size: 3,
          function_to_dispatch: &QueueServices.greet/1
        ]}
     ]

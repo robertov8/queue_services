@@ -16,21 +16,17 @@ defmodule QueueServices.QueueGenserver do
   end
 
   def init(opts) do
-    timeout_monitor_seconds = Keyword.get(opts, :timeout_monitor_seconds, 1)
     ttl_expires_seconds = Keyword.get(opts, :ttl_expires_seconds, 10)
-    max_queue_size = Keyword.get(opts, :max_queue_size, 10)
     function_to_dispatch = Keyword.get(opts, :function_to_dispatch)
 
     initial_state = %{
       queue: [],
-      timeout_monitor_seconds: timeout_monitor_seconds,
       ttl_expires_seconds: ttl_expires_seconds,
       current_ttl_seconds: 0,
-      max_queue_size: max_queue_size,
       function_to_dispatch: function_to_dispatch
     }
 
-    schedule_monitor(timeout_monitor_seconds)
+    schedule_monitor()
 
     {:ok, initial_state}
   end
@@ -49,17 +45,23 @@ defmodule QueueServices.QueueGenserver do
     {:reply, state.queue, state}
   end
 
+  # If the queue is empty, we don't need to monitor it
+  def handle_info(:monitor, %{queue: []} = state) do
+    # Logger.info("Queue is empty, not monitoring")
+    schedule_monitor()
+
+    {:noreply, state}
+  end
+
   def handle_info(:monitor, state) do
-    schedule_monitor(state.timeout_monitor_seconds)
+    schedule_monitor()
 
-    current_ttl_seconds = state.current_ttl_seconds + state.timeout_monitor_seconds
+    current_ttl_seconds = state.current_ttl_seconds + 1
 
-    # Dispatch queue if it has items and either ttl has reached or queue has reached max size
-    has_items = Enum.count(state.queue) > 0
+    # Dispatch queue if ttl has reached
     ttl_reached = current_ttl_seconds >= state.ttl_expires_seconds
-    queue_full = Enum.count(state.queue) >= state.max_queue_size
 
-    if has_items and (ttl_reached or queue_full) do
+    if ttl_reached do
       new_state = %{state | current_ttl_seconds: 0, queue: []}
       # Logger.info("Monitoring timeout: #{inspect(new_state)}")
 
@@ -88,10 +90,9 @@ defmodule QueueServices.QueueGenserver do
     {:noreply, state}
   end
 
-  defp schedule_monitor(timeout_monitor_seconds) do
-    # Logger.info("Scheduling monitor for #{timeout_monitor_seconds}s")
-    timeout_monitor_ms = :timer.seconds(timeout_monitor_seconds)
+  defp schedule_monitor() do
+    # Logger.info("Scheduling monitor for 1s")
 
-    Process.send_after(self(), :monitor, timeout_monitor_ms)
+    Process.send_after(self(), :monitor, :timer.seconds(1))
   end
 end
